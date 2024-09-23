@@ -2,24 +2,23 @@ from flask import Flask, render_template, redirect, url_for, request
 import hashlib
 import os
 import requests
-import socket
 import json
 
 app = Flask(__name__)
 
-# File to store the unique keys for each device
+# File to store the unique keys and their approval status
 KEY_FILE = 'device_keys.json'
 MAX_KEYS = 10  # Limit the number of unique keys to 10
 
 def load_keys():
-    """Load the keys from the JSON file."""
+    """Load the keys and approval status from the JSON file."""
     if os.path.exists(KEY_FILE):
         with open(KEY_FILE, 'r') as f:
             return json.load(f)
     return {}
 
 def save_keys(keys):
-    """Save the keys to the JSON file."""
+    """Save the keys and their approval status to the JSON file."""
     with open(KEY_FILE, 'w') as f:
         json.dump(keys, f)
 
@@ -43,7 +42,7 @@ def get_unique_key():
 
     # If the device already has a key, return it
     if public_ip in keys:
-        return keys[public_ip]
+        return keys[public_ip]['key']
     
     # If we already have 10 unique keys, do not generate more
     if len(keys) >= MAX_KEYS:
@@ -53,26 +52,29 @@ def get_unique_key():
     random_bytes = os.urandom(16)  # Random 16 bytes for uniqueness
     unique_key = hashlib.sha256(random_bytes + public_ip.encode()).hexdigest()
     
-    # Save the new key to the file
-    keys[public_ip] = unique_key
+    # Save the new key and its approval status (False by default)
+    keys[public_ip] = {'key': unique_key, 'approved': False}
     save_keys(keys)
 
     return unique_key
 
 def check_permission(unique_key):
-    """Check if the unique key has been approved."""
-    try:
-        response = requests.get("https://pastebin.com/raw/3qYPuSRt")
-        if response.status_code == 200:
-            data = response.text
-            permission_list = [line.strip() for line in data.split("\n") if line.strip().find(unique_key) != -1]
-            if not permission_list:
-                return False  # Not approved yet
-            return True  # Approved
-        else:
-            return False  # Failed to fetch permissions list
-    except Exception as e:
-        return f"Error checking permission: {e}"
+    """Check if the unique key has been approved locally."""
+    keys = load_keys()
+    for ip, data in keys.items():
+        if data['key'] == unique_key:
+            return data['approved']
+    return False
+
+def approve_key(unique_key):
+    """Approve a specific unique key."""
+    keys = load_keys()
+    for ip, data in keys.items():
+        if data['key'] == unique_key:
+            keys[ip]['approved'] = True
+            save_keys(keys)
+            return True
+    return False
 
 @app.route('/')
 def index():
@@ -87,6 +89,13 @@ def check_approval(unique_key):
         return redirect(url_for('approved'))  # Redirect to approval page
     else:
         return render_template('not_approved.html', unique_key=unique_key)  # Stay on approval check
+
+@app.route('/approve/<unique_key>', methods=['POST'])
+def approve(unique_key):
+    if approve_key(unique_key):
+        return redirect(url_for('approved'))
+    else:
+        return "Error approving key", 400
 
 @app.route('/approved')
 def approved():
