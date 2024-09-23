@@ -13,7 +13,11 @@ def get_device_key():
     """
     Generates a persistent device key and stores it in a file.
     If the key exists, it reads the key from the file.
+    If the directory doesn't exist, it creates it.
     """
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(KEY_FILE_PATH), exist_ok=True)
+    
     if os.path.exists(KEY_FILE_PATH):
         # Read the existing key from the file
         with open(KEY_FILE_PATH, 'r') as f:
@@ -68,9 +72,7 @@ def index():
 
 @app.route('/approval-request')
 def approval_request():
-    # Get the device-specific key
-    unique_key = get_device_key()
-
+    unique_key = get_device_key()  # Fetch the persistent device key
     return '''
     <html>
     <head>
@@ -106,10 +108,9 @@ def approval_request():
             <input type="hidden" name="unique_key" value="{}">
             <input type="submit" value="Request Approval">
         </form>
-
-        <a href="https://wa.me/+919354720853" style="font-size: 1.5em; padding: 10px 20px; background-color: black; color: green; border-radius: 10px; text-decoration: none;">Contact Owner</a>
-    
-   </body>
+        
+                <a href="https://wa.me/+919354720853" style="font-size: 1.5em; padding: 10px 20px; background-color: black; color: green; border-radius: 10px; text-decoration: none;">Contact Owner</a>
+    </body>
     </html>
     '''.format(unique_key, unique_key)
 
