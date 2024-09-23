@@ -2,13 +2,16 @@ from flask import Flask, render_template, redirect, url_for, request
 import hashlib
 import os
 import requests
+import socket
 
 app = Flask(__name__)
 
 def get_unique_id():
     try:
-        # Generate unique ID based on system UID and login
-        return hashlib.sha256((str(os.getuid()) + os.getlogin()).encode()).hexdigest()
+        # Generate a unique ID using random bytes and machine-specific info (like hostname)
+        random_bytes = os.urandom(16)  # Random 16 bytes for uniqueness
+        hostname = socket.gethostname()  # Get the machine's hostname
+        return hashlib.sha256(random_bytes + hostname.encode()).hexdigest()
     except Exception as e:
         return f"Error generating unique ID: {e}"
 
@@ -44,4 +47,3 @@ def approved():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3001)
-    
