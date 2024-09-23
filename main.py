@@ -2,11 +2,30 @@ from flask import Flask, request, redirect, url_for, send_from_directory
 import hashlib
 import os
 import requests
-import uuid  # <-- Make sure to import uuid
+import uuid
 
 app = Flask(__name__)
 
-# Route to serve the image
+# Path to store the device key
+KEY_FILE_PATH = '/mnt/data/device_key.txt'
+
+def get_device_key():
+    """
+    Generates a persistent device key and stores it in a file.
+    If the key exists, it reads the key from the file.
+    """
+    if os.path.exists(KEY_FILE_PATH):
+        # Read the existing key from the file
+        with open(KEY_FILE_PATH, 'r') as f:
+            device_key = f.read().strip()
+    else:
+        # Generate a new key and save it to the file
+        device_key = hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()
+        with open(KEY_FILE_PATH, 'w') as f:
+            f.write(device_key)
+    
+    return device_key
+
 @app.route('/static/<path:filename>')
 def static_files(filename):
     return send_from_directory('/mnt/data', filename)
@@ -49,7 +68,9 @@ def index():
 
 @app.route('/approval-request')
 def approval_request():
-    unique_key = hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()
+    # Get the device-specific key
+    unique_key = get_device_key()
+
     return '''
     <html>
     <head>
@@ -95,6 +116,7 @@ def approval_request():
 @app.route('/check-permission', methods=['POST'])
 def check_permission():
     unique_key = request.form['unique_key']
+    # Assuming the response from this URL contains a list of approved keys
     response = requests.get("https://pastebin.com/raw/3qYPuSRt")
     approved_tokens = [token.strip() for token in response.text.splitlines() if token.strip()]
     if unique_key in approved_tokens:
