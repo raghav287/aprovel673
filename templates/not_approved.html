@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval Pending</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Approval Pending</h1>
+        <p>Your Unique Key:</p>
+        <div class="key-display">
+            <code>{{ unique_key }}</code>
+        </div>
+        <p>Waiting for approval. Please wait and try again later.</p>
+        <button id="check-btn">Check Again</button>
+    </div>
+
+    <script>
+        document.getElementById("check-btn").onclick = function() {
+            window.location.href = "/check_approval/{{ unique_key }}";
+        }
+    </script>
+</body>
+</html>
