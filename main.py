@@ -6,18 +6,20 @@ import uuid
 
 app = Flask(__name__)
 
-# Path to store the device key
-KEY_FILE_PATH = '/mnt/data/device_key.txt'
+Path to store the key
+KEY_FILE_PATH = '/tmp/device_key.txt'  # Using /tmp as it is writable on most systems
 
 def get_device_key():
     """
     Generates a persistent device key and stores it in a file.
     If the key exists, it reads the key from the file.
-    If the directory doesn't exist, it creates it.
     """
     # Ensure the directory exists
-    os.makedirs(os.path.dirname(KEY_FILE_PATH), exist_ok=True)
+    directory = os.path.dirname(KEY_FILE_PATH)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     
+    # Check if the key already exists
     if os.path.exists(KEY_FILE_PATH):
         # Read the existing key from the file
         with open(KEY_FILE_PATH, 'r') as f:
