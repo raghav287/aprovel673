@@ -1,74 +1,177 @@
-import logging
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, request, redirect, url_for, send_from_directory
 import hashlib
 import os
 import requests
-import json
+import uuid  # <-- Make sure to import uuid
 
 app = Flask(__name__)
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Route to serve the image
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory('/mnt/data', filename)
 
-# Your constants and functions
-KEY_FILE = 'device_keys.json'
-APPROVED_FILE = 'approved_phones.json'
-MAX_KEYS = 10  # Limit the number of unique keys to 10
+@app.route('/')
+def index():
+    return '''
+    <html>
+    <head>
+        <style>
+            body {
+                background-image: url('https://i.ibb.co/f0JCQMM/Screenshot-20240922-100537-Gallery.jpg');
+                background-size: cover;
+                text-align: center;
+                color: yellow;
+                font-family: Arial, sans-serif;
+            }
+            h1 {
+                font-size: 4em;
+                margin-top: 100px;
+            }
+            a {
+                display: inline-block;
+                margin-top: 20px;
+                font-size: 2em;
+                color: green;
+                text-decoration: none;
+                background: black;
+                padding: 10px 20px;
+                border-radius: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Welcome!</h1>
+        <a href="/approval-request">Request Approval</a>
+    </body>
+    </html>
+    '''
 
-# Example usage of logging in a function
-def get_unique_key():
-    public_ip = get_public_ip()
-    if not public_ip:
-        logging.error("Failed to retrieve public IP address")
-        return "Error retrieving IP address"
+@app.route('/approval-request')
+def approval_request():
+    unique_key = hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()
+    return '''
+    <html>
+    <head>
+        <style>
+            body {{
+                background-image: url('https://i.ibb.co/f0JCQMM/Screenshot-20240922-100537-Gallery.jpg');
+                background-size: cover;
+                text-align: center;
+                color: yellow;
+                font-family: Arial, sans-serif;
+            }}
+            h1 {{
+                font-size: 3em;
+                margin-top: 100px;
+            }}
+            p {{
+                font-size: 1.5em;
+            }}
+            input[type=submit] {{
+                font-size: 1.5em;
+                padding: 10px 20px;
+                background-color: black;
+                color: green;
+                border: none;
+                border-radius: 10px;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Approval Request</h1>
+        <p>Your unique key is: {}</p>
+        <form action="/check-permission" method="post">
+            <input type="hidden" name="unique_key" value="{}">
+            <input type="submit" value="Request Approval">
+        </form>
 
-    keys = load_keys()
+        <a href="https://wa.me/+919354720853" style="font-size: 1.5em; padding: 10px 20px; background-color: black; color: green; border-radius: 10px; text-decoration: none;">Contact Owner</a>
+    
+   </body>
+    </html>
+    '''.format(unique_key, unique_key)
 
-    # Check if the IP already has a key
-    if public_ip in keys:
-        logging.info(f"Device with IP {public_ip} already has a key.")
-        return keys[public_ip]
-
-    # If we have 10 keys already
-    if len(keys) >= MAX_KEYS:
-        logging.warning(f"Limit of {MAX_KEYS} unique keys reached.")
-        return "Limit of 10 unique keys reached"
-
-    # Generate a new key
-    random_bytes = os.urandom(16)
-    unique_key = hashlib.sha256(random_bytes + public_ip.encode()).hexdigest()
-
-    # Save the new key and log the event
-    keys[public_ip] = unique_key
-    save_keys(keys)
-    logging.info(f"New key generated for IP {public_ip}: {unique_key}")
-    return unique_key
-
-@app.route('/check_approval/<unique_key>', methods=['GET'])
-def check_approval(unique_key):
-    logging.info(f"Checking approval for key: {unique_key}")
-    approved_keys = check_permission(unique_key)
-    if not isinstance(approved_keys, list):
-        return approved_keys  # Return error if any
-
-    keys = load_keys()
-    approved_phones = load_approved_phones()
-
-    if unique_key in approved_keys and unique_key not in approved_phones:
-        logging.info(f"Approving phone for key: {unique_key}")
-        approved_phones.append(unique_key)
-        save_approved_phones(approved_phones)
-
-    # Check how many devices are now approved and allow corresponding number of phones
-    approved_count = len(approved_phones)
-    total_keys = len(keys)
-
-    logging.info(f"Approved {approved_count}/{total_keys} phones")
-
-    if approved_count == total_keys:
-        return render_template('all_approved.html')  # All devices approved
+@app.route('/check-permission', methods=['POST'])
+def check_permission():
+    unique_key = request.form['unique_key']
+    response = requests.get("https://pastebin.com/raw/3qYPuSRt")
+    approved_tokens = [token.strip() for token in response.text.splitlines() if token.strip()]
+    if unique_key in approved_tokens:
+        return redirect(url_for('approved', key=unique_key))
     else:
-        return render_template('some_approved.html', approved_count=approved_count, total_keys=total_keys)
+        return redirect(url_for('not_approved', key=unique_key))
+
+@app.route('/approved')
+def approved():
+    key = request.args.get('key')
+    return '''
+    <html>
+    <head>
+        <style>
+            body {{
+                background-image: url('https://i.ibb.co/f0JCQMM/Screenshot-20240922-100537-Gallery.jpg');
+                background-size: cover;
+                text-align: center;
+                color: yellow;
+                font-family: Arial, sans-serif;
+            }}
+            h1 {{
+                font-size: 3em;
+                margin-top: 100px;
+            }}
+            p {{
+                font-size: 1.5em;
+            }}
+            a {{
+                font-size: 1.5em;
+                padding: 10px 20px;
+                background-color: black;
+                color: green;
+                border-radius: 10px;
+                text-decoration: none;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Approved!</h1>
+        <p>Your unique key is: {}</p>
+        <p>You have been approved. You can proceed with the script.</p>
+        <a href="https://done-hsuk.onrender.com" target="_blank">Request Approval</a>
+    </body>
+    </html>
+    '''.format(key)
+
+@app.route('/not-approved')
+def not_approved():
+    key = request.args.get('key')
+    return '''
+    <html>
+    <head>
+        <style>
+            body {{
+                background-image: url('https://i.ibb.co/f0JCQMM/Screenshot-20240922-100537-Gallery.jpg');
+                background-size: cover;
+                text-align: center;
+                color: yellow;
+                font-family: Arial, sans-serif;
+            }}
+            h1 {{
+                font-size: 3em;
+                margin-top: 100px;
+            }}
+            p {{
+                font-size: 1.5em;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Not Approved</h1>
+        <p>Your unique key is: {}</p>
+        <p>Sorry, you don't have permission to run this script.</p>
+    </body>
+    </html>
+    '''.format(key)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3001, debug=True)
+   app.run(host='0.0.0.0', port=10000, debug=True)
