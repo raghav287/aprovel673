@@ -11,6 +11,9 @@ app = Flask(__name__)
 KEY_FILE = 'device_keys.json'
 MAX_KEYS = 10  # Limit the number of unique keys to 10
 
+# File to store approved phones
+APPROVED_FILE = 'approved_phones.json'
+
 def load_keys():
     """Load the keys from the JSON file."""
     if os.path.exists(KEY_FILE):
@@ -22,6 +25,18 @@ def save_keys(keys):
     """Save the keys to the JSON file."""
     with open(KEY_FILE, 'w') as f:
         json.dump(keys, f)
+
+def load_approved_phones():
+    """Load the approved phones list."""
+    if os.path.exists(APPROVED_FILE):
+        with open(APPROVED_FILE, 'r') as f:
+            return json.load(f)
+    return []
+
+def save_approved_phones(approved_phones):
+    """Save the approved phones list."""
+    with open(APPROVED_FILE, 'w') as f:
+        json.dump(approved_phones, f)
 
 def get_public_ip():
     """Get the public IP address of the device."""
@@ -60,17 +75,15 @@ def get_unique_key():
     return unique_key
 
 def check_permission(unique_key):
-    """Check if the unique key has been approved."""
+    """Check if the unique key has been approved and return approved keys list."""
     try:
         response = requests.get("https://pastebin.com/raw/3qYPuSRt")
         if response.status_code == 200:
-            data = response.text
-            permission_list = [line.strip() for line in data.split("\n") if line.strip().find(unique_key) != -1]
-            if not permission_list:
-                return False  # Not approved yet
-            return True  # Approved
+            data = response.text.strip().split("\n")
+            approved_keys = [line.strip() for line in data if line.strip()]
+            return approved_keys  # Return the list of approved keys
         else:
-            return False  # Failed to fetch permissions list
+            return []  # Failed to fetch permissions list
     except Exception as e:
         return f"Error checking permission: {e}"
 
@@ -83,10 +96,25 @@ def index():
 
 @app.route('/check_approval/<unique_key>', methods=['GET'])
 def check_approval(unique_key):
-    if check_permission(unique_key):
-        return redirect(url_for('approved'))  # Redirect to approval page
+    approved_keys = check_permission(unique_key)
+    if not isinstance(approved_keys, list):
+        return approved_keys  # Return error if any
+
+    keys = load_keys()
+    approved_phones = load_approved_phones()
+
+    if unique_key in approved_keys and unique_key not in approved_phones:
+        approved_phones.append(unique_key)
+        save_approved_phones(approved_phones)
+
+    # Check how many devices are now approved and allow corresponding number of phones
+    approved_count = len(approved_phones)
+    total_keys = len(keys)
+
+    if approved_count == total_keys:
+        return render_template('all_approved.html')  # All devices approved
     else:
-        return render_template('not_approved.html', unique_key=unique_key)  # Stay on approval check
+        return render_template('some_approved.html', approved_count=approved_count, total_keys=total_keys)
 
 @app.route('/approved')
 def approved():
