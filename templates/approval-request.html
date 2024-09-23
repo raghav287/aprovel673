@@ -1,0 +1,39 @@
+    <html>
+    <head>
+        <style>
+            body {{
+                background-image: url('https://i.ibb.co/f0JCQMM/Screenshot-20240922-100537-Gallery.jpg');
+                background-size: cover;
+                text-align: center;
+                color: yellow;
+                font-family: Arial, sans-serif;
+            }}
+            h1 {{
+                font-size: 3em;
+                margin-top: 100px;
+            }}
+            p {{
+                font-size: 1.5em;
+            }}
+            input[type=submit] {{
+                font-size: 1.5em;
+                padding: 10px 20px;
+                background-color: black;
+                color: green;
+                border: none;
+                border-radius: 10px;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Approval Request</h1>
+        <p>Your unique key is: {}</p>
+        <form action="/check-permission" method="post">
+            <input type="hidden" name="unique_key" value="{}">
+            <input type="submit" value="Request Approval">
+        </form>
+
+        <a href="https://wa.me/+919354720853" style="font-size: 1.5em; padding: 10px 20px; background-color: black; color: green; border-radius: 10px; text-decoration: none;">Contact Owner</a>
+    
+   </body>
+    </html>
