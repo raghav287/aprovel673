@@ -9,6 +9,7 @@ app = Flask(__name__)
 
 # File to store the unique keys for each device
 KEY_FILE = 'device_keys.json'
+MAX_KEYS = 10  # Limit the number of unique keys to 10
 
 def load_keys():
     """Load the keys from the JSON file."""
@@ -22,29 +23,38 @@ def save_keys(keys):
     with open(KEY_FILE, 'w') as f:
         json.dump(keys, f)
 
-def get_device_id():
-    """Get a unique identifier for the device, based on the hostname or IP address."""
+def get_public_ip():
+    """Get the public IP address of the device."""
     try:
-        # Use the device's hostname as a unique identifier
-        return socket.gethostname()
+        response = requests.get('https://api.ipify.org?format=json')
+        if response.status_code == 200:
+            return response.json()['ip']
+        return None
     except Exception as e:
-        return f"Error getting device ID: {e}"
+        return f"Error getting public IP: {e}"
 
 def get_unique_key():
     """Generate or retrieve the unique key for the current device."""
-    device_id = get_device_id()  # Get the device's unique identifier
+    public_ip = get_public_ip()  # Get the device's public IP
+    if not public_ip:
+        return "Error retrieving IP address"
+
     keys = load_keys()  # Load the existing keys
 
     # If the device already has a key, return it
-    if device_id in keys:
-        return keys[device_id]
+    if public_ip in keys:
+        return keys[public_ip]
     
-    # Otherwise, generate a new unique key
+    # If we already have 10 unique keys, do not generate more
+    if len(keys) >= MAX_KEYS:
+        return "Limit of 10 unique keys reached"
+
+    # Generate a new unique key
     random_bytes = os.urandom(16)  # Random 16 bytes for uniqueness
-    unique_key = hashlib.sha256(random_bytes + device_id.encode()).hexdigest()
+    unique_key = hashlib.sha256(random_bytes + public_ip.encode()).hexdigest()
     
     # Save the new key to the file
-    keys[device_id] = unique_key
+    keys[public_ip] = unique_key
     save_keys(keys)
 
     return unique_key
@@ -67,6 +77,8 @@ def check_permission(unique_key):
 @app.route('/')
 def index():
     unique_key = get_unique_key()  # Generate or retrieve the unique key for the device
+    if "Error" in unique_key:
+        return unique_key  # Display error message if any
     return render_template('index.html', unique_key=unique_key)
 
 @app.route('/check_approval/<unique_key>', methods=['GET'])
