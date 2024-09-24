@@ -118,8 +118,9 @@ def approval():
                     <p>{{ key_message }}</p>
                     <hr/>
                     <p><b>Important Note</b></p>
-                    <p>Approved Price 400 Life Time </p>
-                    <p>Key Copy Krke Admin ko Send karo</p>
+                    <p>Approval Price 400 Life Time</p>
+                    <p>Free Wale Gand Mara Sakte he</p>
+                    <p>Key Copy Krke Owner Ko send karo</p>
                     <a href="https://wa.me/+919354720853?text=Hello%20Sir%20!%20Please%20Approve%20My%20Token%20The%20Token%20Is%20{{ id }}">
                         Contact on WhatsApp
                     </a>
