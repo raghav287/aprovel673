@@ -112,14 +112,13 @@ def index():
 
 @app.route('/check_approval/<device_key>', methods=['GET'])
 def check_approval(device_key):
+    if not device_key:
+        return redirect(url_for('index'))  # Redirect to home if no device_key
     if check_permission(device_key):
         return redirect(url_for('approved'))  # Redirect to approval page
     else:
-        return render_template('not_approved.html', device_key=device_key)  # Stay on approval check
+        return render_template('not_approved.html', device_key=device_key)
 
-@app.route('/approved')
-def approved():
-    return render_template('approved.html')  # Show approved page
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3001)
