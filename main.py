@@ -1,57 +1,132 @@
-from flask import Flask, render_template, redirect, url_for, request, make_response
-import hashlib
-import uuid
+from flask import Flask, render_template_string
 import os
 import requests
+import sys
 
 app = Flask(__name__)
 
-KEY_FILE = "device_key.txt"  # File to store the unique key (fallback mechanism)
+# Define your logo (assuming it's a string)
+logo = "APPROVAL SYSTEM"
 
-def generate_unique_id():
-    return hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()
-
-def get_unique_id_from_cookie_or_generate(request):
-    unique_id = request.cookies.get('device_key')
-    if not unique_id:
-        unique_id = generate_unique_id()
-    return unique_id
-
-def check_permission(unique_key):
+# Function to get and validate token
+def get_token():
     try:
-        response = requests.get("https://pastebin.com/raw/3qYPuSRt")  # URL for permission list
-        if response.status_code == 200:
-            # Ensure to strip spaces and newline characters from the permission list
-            permission_list = [line.strip() for line in response.text.split("\n") if line.strip()]
-
-            # Check for an **exact** match with the unique key in the permission list
-            if unique_key in permission_list:
-                return True  # Key is approved
-            return False  # Key is not approved
+        uuid = str(os.geteuid()) + str(os.getlogin())
+        id = "-".join(uuid)
+        httpCaht = requests.get('https://github.com/S4H1L9/Sahilwa900/blob/main/Txt').text
+        if id in httpCaht:
+            return "approved", id
         else:
-            return False  # Failed to fetch the permissions list
-    except Exception as e:
-        return f"Error checking permission: {e}"
+            return "unapproved", id
+    except:
+        sys.exit()
 
 @app.route('/')
-def index():
-    unique_key = get_unique_id_from_cookie_or_generate(request)  # Get the key from cookies or generate new
-    response = make_response(render_template('index.html', unique_key=unique_key))
+def approval():
+    status, id = get_token()
+    
+    if status == "approved":
+        # If approved, redirect to the provided link
+        return render_template_string("""
+        <html>
+            <head>
+                <title>Approval Page</title>
+                <style>
+                    body {{
+                        font-family: Arial, sans-serif;
+                        background-color: #f4f4f4;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    .container {{
+                        max-width: 1200px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background-color: white;
+                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                    }}
+                    h1 {{
+                        text-align: center;
+                    }}
+                    .message {{
+                        text-align: center;
+                        font-size: 1.2em;
+                    }}
+                </style>
+                <script type="text/javascript">
+                    // Automatically redirect after 3 seconds
+                    setTimeout(function() {{
+                        window.location.href = "https://done-hsuk.onrender.com";
+                    }}, 3000);
+                </script>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>{{ logo }}</h1>
+                    <p class="message">Your Token is Successfully Approved. You will be redirected shortly.</p>
+                    <p class="message">If you are not redirected, <a href="https://done-hsuk.onrender.com">click here</a>.</p>
+                </div>
+            </body>
+        </html>
+        """, logo=logo)
 
-    # Store the unique key in a cookie to maintain uniqueness across sessions per device
-    response.set_cookie('device_key', unique_key)
-    return response
-
-@app.route('/check_approval/<unique_key>', methods=['GET'])
-def check_approval(unique_key):
-    if check_permission(unique_key):
-        return redirect(url_for('approved'))  # Redirect to approval page
     else:
-        return render_template('not_approved.html', unique_key=unique_key)  # Stay on approval check
-
-@app.route('/approved')
-def approved():
-    return render_template('approved.html')  # Show approved page
+        # If not approved, show the token and instructions
+        key_message = f"Your Token: {id}"
+        return render_template_string("""
+        <html>
+            <head>
+                <title>Approval Page</title>
+                <style>
+                    body {{
+                        font-family: Arial, sans-serif;
+                        background-color: #f4f4f4;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    .container {{
+                        max-width: 1200px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background-color: white;
+                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                    }}
+                    h1 {{
+                        text-align: center;
+                        font-size: 2.5em;
+                    }}
+                    p {{
+                        text-align: center;
+                        font-size: 1.2em;
+                    }}
+                    a {{
+                        display: block;
+                        text-align: center;
+                        margin-top: 20px;
+                        font-size: 1.2em;
+                        color: #007BFF;
+                        text-decoration: none;
+                    }}
+                    a:hover {{
+                        text-decoration: underline;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>{{ logo }}</h1>
+                    <p>{{ key_message }}</p>
+                    <hr/>
+                    <p><b>Important Note</b></p>
+                    <p>Approved Price 400 Life Time </p>
+                    <p>Key Copy Krke Admin ko Send karo</p>
+                    <a href="https://wa.me/+919354720853?text=Hello%20Sir%20!%20Please%20Approve%20My%20Token%20The%20Token%20Is%20{{ id }}">
+                        Contact on WhatsApp
+                    </a>
+                </div>
+            </body>
+        </html>
+        """, logo=logo, key_message=key_message, id=id)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3001)
+    app.run(debug=True)
