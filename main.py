@@ -2,14 +2,15 @@ from flask import Flask, render_template, redirect, url_for, request
 import hashlib
 import os
 import requests
-import time
+import uuid  # Use uuid to generate a unique identifier
 
 app = Flask(__name__)
 
 def get_unique_id():
     try:
-        # Generate unique ID based on system UID and login
-        return hashlib.sha256((str(os.getuid()) + os.getlogin()).encode()).hexdigest()
+        # Use UUID based on the machine’s network interface and hardware
+        unique_id = uuid.uuid1()  # UUID1 generates a unique ID based on the host's MAC address and time
+        return hashlib.sha256(str(unique_id).encode()).hexdigest()
     except Exception as e:
         return f"Error generating unique ID: {e}"
 
@@ -45,4 +46,3 @@ def approved():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3001)
-    
