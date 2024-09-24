@@ -1,5 +1,6 @@
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, request
 import hashlib
+import uuid
 import os
 import requests
 
@@ -15,8 +16,7 @@ def get_unique_id():
                 unique_id = f.read().strip()
         else:
             # Generate a new unique key and store it
-            # Use a fixed string to generate a hash for a consistent key
-            unique_id = hashlib.sha256("fixed_unique_identifier".encode()).hexdigest()
+            unique_id = hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()
             with open(KEY_FILE, 'w') as f:
                 f.write(unique_id)
         return unique_id
