@@ -1,6 +1,5 @@
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for
 import hashlib
-import uuid
 import os
 import requests
 
@@ -16,7 +15,8 @@ def get_unique_id():
                 unique_id = f.read().strip()
         else:
             # Generate a new unique key and store it
-            unique_id = hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()
+            # Use a fixed string to generate a hash for a consistent key
+            unique_id = hashlib.sha256("fixed_unique_identifier".encode()).hexdigest()
             with open(KEY_FILE, 'w') as f:
                 f.write(unique_id)
         return unique_id
@@ -25,17 +25,17 @@ def get_unique_id():
 
 def check_permission(unique_key):
     try:
-        response = requests.get("https://pastebin.com/3qYPuSRt")  # URL for permission list
+        response = requests.get("https://pastebin.com/raw/3qYPuSRt")  # URL for permission list
         if response.status_code == 200:
-            data = response.text
-            permission_list = [line.strip() for line in data.split("\n") if line.strip()]
-            
-            # Check for an exact match of the unique key in the permission list
+            # Ensure to strip spaces and newline characters from the permission list
+            permission_list = [line.strip() for line in response.text.split("\n") if line.strip()]
+
+            # Check for an **exact** match with the unique key in the permission list
             if unique_key in permission_list:
-                return True  # Approved
-            return False  # Not approved
+                return True  # Key is approved
+            return False  # Key is not approved
         else:
-            return False  # Failed to fetch permissions list
+            return False  # Failed to fetch the permissions list
     except Exception as e:
         return f"Error checking permission: {e}"
 
