@@ -15,9 +15,14 @@ MAX_KEYS = 10  # Limit the number of unique keys to 10
 def load_keys():
     """Load the keys from the JSON file."""
     if os.path.exists(KEY_FILE):
-        with open(KEY_FILE, 'r') as f:
-            return json.load(f)
+        try:
+            with open(KEY_FILE, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            # Handle the case where the file is empty or invalid
+            return {}
     return {}
+
 
 def save_keys(keys):
     """Save the keys to the JSON file."""
