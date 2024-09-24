@@ -16,7 +16,7 @@ def get_unique_id():
 
 def check_permission(unique_key):
     try:
-        response = requests.get("https://pastebin.com/raw/3h2v25aR")
+        response = requests.get("https://pastebin.com/3qYPuSRt")
         if response.status_code == 200:
             data = response.text
             permission_list = [line.strip() for line in data.split("\n") if line.strip().find(unique_key) != -1]
