@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for, request, make_response
 import hashlib
 import uuid
 import os
@@ -6,22 +6,16 @@ import requests
 
 app = Flask(__name__)
 
-KEY_FILE = "device_key.txt"  # File to store the unique key
+KEY_FILE = "device_key.txt"  # File to store the unique key (fallback mechanism)
 
-def get_unique_id():
-    try:
-        # Check if the key is already stored in the file
-        if os.path.exists(KEY_FILE):
-            with open(KEY_FILE, 'r') as f:
-                unique_id = f.read().strip()
-        else:
-            # Generate a new unique key and store it
-            unique_id = hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()
-            with open(KEY_FILE, 'w') as f:
-                f.write(unique_id)
-        return unique_id
-    except Exception as e:
-        return f"Error generating unique ID: {e}"
+def generate_unique_id():
+    return hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()
+
+def get_unique_id_from_cookie_or_generate(request):
+    unique_id = request.cookies.get('device_key')
+    if not unique_id:
+        unique_id = generate_unique_id()
+    return unique_id
 
 def check_permission(unique_key):
     try:
@@ -41,8 +35,12 @@ def check_permission(unique_key):
 
 @app.route('/')
 def index():
-    unique_key = get_unique_id()  # Get the stored or newly generated unique key
-    return render_template('index.html', unique_key=unique_key)
+    unique_key = get_unique_id_from_cookie_or_generate(request)  # Get the key from cookies or generate new
+    response = make_response(render_template('index.html', unique_key=unique_key))
+
+    # Store the unique key in a cookie to maintain uniqueness across sessions per device
+    response.set_cookie('device_key', unique_key)
+    return response
 
 @app.route('/check_approval/<unique_key>', methods=['GET'])
 def check_approval(unique_key):
