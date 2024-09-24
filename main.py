@@ -25,13 +25,15 @@ def get_unique_id():
 
 def check_permission(unique_key):
     try:
-        response = requests.get("https://pastebin.com/3qYPuSRt")
+        response = requests.get("https://pastebin.com/3qYPuSRt")  # URL for permission list
         if response.status_code == 200:
             data = response.text
-            permission_list = [line.strip() for line in data.split("\n") if line.strip().find(unique_key) != -1]
-            if not permission_list:
-                return False  # Not approved yet
-            return True  # Approved
+            permission_list = [line.strip() for line in data.split("\n") if line.strip()]
+            
+            # Check for an exact match of the unique key in the permission list
+            if unique_key in permission_list:
+                return True  # Approved
+            return False  # Not approved
         else:
             return False  # Failed to fetch permissions list
     except Exception as e:
