@@ -3,20 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Device Key</title>
+    <title>Approval System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Your Device Key</h1>
-    <p>Your device key is: {{ device_key }}</p>
+    <div class="container">
+        <h1>Welcome to the Approval System</h1>
+        <p>Your Unique Key:</p>
+        <div class="key-display">
+            <code>{{ unique_key }}</code>
+        </div>
+        <button id="check-btn">Check Approval</button>
+    </div>
 
-    <!-- Dynamic link to check approval -->
-    <a href="{{ url_for('check_approval', device_key=device_key) }}" id="check-approval-link">
-        Check Approval
-    </a>
-
-    <!-- Or use a button -->
-    <form action="{{ url_for('check_approval', device_key=device_key) }}" method="GET">
-        <button type="submit">Check Approval</button>
-    </form>
+    <script>
+        document.getElementById("check-btn").onclick = function() {
+            window.location.href = "/check_approval/{{ unique_key }}";
+        }
+    </script>
 </body>
 </html>
