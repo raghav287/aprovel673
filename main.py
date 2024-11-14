@@ -19,7 +19,7 @@ def get_unique_id_from_cookie_or_generate(request):
 
 def check_permission(unique_key):
     try:
-        response = requests.get("https://pastebin.com/raw/3qYPuSRt")  # URL for permission list
+        response = requests.get("https://pastebin.com/raw/KVXnqBus")  # URL for permission list
         if response.status_code == 200:
             # Ensure to strip spaces and newline characters from the permission list
             permission_list = [line.strip() for line in response.text.split("\n") if line.strip()]
